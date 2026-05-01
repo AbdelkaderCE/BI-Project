@@ -1,4 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&family=Inter:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&family=Inter:wght@400;500&family=Playfair+Display:wght@400;500;700&display=swap');
+
+@font-face {
+  font-family: 'TAN Grandeur';
+  src: url('/fonts/tan-grandeur.woff2') format('woff2'),
+       url('/fonts/tan-grandeur.woff') format('woff'),
+       url('/fonts/tan-grandeur.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 :root {
   /* Colors */
@@ -33,6 +43,7 @@
 
   /* Typography */
   --font-serif: 'EB Garamond', Garamond, "Times New Roman", serif;
+  --font-display: 'TAN Grandeur', 'Playfair Display', serif;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
@@ -78,10 +89,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Base Styles */
-.display-xl { font-size: 64px; line-height: 1.05; letter-spacing: -1.5px; }
-.display-lg { font-size: 48px; line-height: 1.1; letter-spacing: -1px; }
-.display-md { font-size: 36px; line-height: 1.15; letter-spacing: -0.5px; }
-.display-sm { font-size: 28px; line-height: 1.2; letter-spacing: -0.3px; }
+.display-xl { font-family: var(--font-display); font-size: 64px; line-height: 1.05; letter-spacing: -1.5px; }
+.display-lg { font-family: var(--font-display); font-size: 48px; line-height: 1.1; letter-spacing: -1px; }
+.display-md { font-family: var(--font-display); font-size: 36px; line-height: 1.15; letter-spacing: -0.5px; }
+.display-sm { font-family: var(--font-display); font-size: 28px; line-height: 1.2; letter-spacing: -0.3px; }
 
 .title-lg { font-family: var(--font-sans); font-size: 22px; font-weight: 500; line-height: 1.3; }
 .title-md { font-family: var(--font-sans); font-size: 18px; font-weight: 500; line-height: 1.4; color: var(--colors-ink); }
@@ -507,13 +518,14 @@ td {
 .badge-coral {
   background-color: var(--colors-primary);
   color: var(--colors-on-primary);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 1.5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
   border-radius: var(--rounded-pill);
-  padding: 4px 12px;
+  padding: 5px 10px;
   display: inline-block;
+  white-space: nowrap;
 }
 
 .rules-header-row {

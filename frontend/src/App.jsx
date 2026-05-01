@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import { ArrowRight, BarChart2, Lightbulb, Link2, Menu, Search, Settings, Sparkles, Star, Target, Upload } from 'lucide-react';
+import { ArrowRight, BarChart2, BookOpen, Lightbulb, Link2, Menu, Search, Settings, Sparkles, Star, Target, Upload } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import './index.css';
 import AprioriSteps from './components/AprioriSteps';
+import AprioriDocumentation from './components/AprioriDocumentation';
 
 const MAX_UPLOAD_MB = 25;
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
@@ -497,6 +498,7 @@ function RelationshipMap({ rules, maxRulesToShow = 10 }) {
 }
 
 function App() {
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'documentation', 'upload', 'results'
   const [file, setFile] = useState(null);
   const [transactionCol, setTransactionCol] = useState('');
   const [itemCol, setItemCol] = useState('');
@@ -582,6 +584,51 @@ function App() {
     return associationRules.filter((rule) => rule.support >= supportFilter);
   }, [associationRules, supportFilter]);
 
+  // Render documentation view if selected
+  if (currentView === 'documentation') {
+    return (
+      <div className="App">
+        <nav className="top-nav">
+          <div className="top-nav-brand">
+            <span className="brand-mark" aria-hidden="true">*</span>
+            <span className="title-md">Apriori Analytics</span>
+          </div>
+          <div className="top-nav-links" aria-label="Primary navigation">
+            <button 
+              className="nav-link" 
+              onClick={() => setCurrentView('home')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >
+              Overview
+            </button>
+            <button 
+              className="nav-link" 
+              onClick={() => setCurrentView('documentation')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontWeight: 600, color: 'var(--colors-primary)' }}
+            >
+              Learn
+            </button>
+            <button 
+              className="nav-link" 
+              onClick={() => setCurrentView('home')}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            >
+              Upload
+            </button>
+          </div>
+          <div className="top-nav-actions">
+            <button className="button button-primary" onClick={() => setCurrentView('home')}>
+              Try Apriori
+            </button>
+          </div>
+        </nav>
+        <main>
+          <AprioriDocumentation />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="App">
       <nav className="top-nav">
@@ -590,17 +637,30 @@ function App() {
           <span className="title-md">Apriori Analytics</span>
         </div>
         <div className="top-nav-links" aria-label="Primary navigation">
-          {navItems.map((item) => (
-            <a key={item} href={`#${item.toLowerCase()}`} className="nav-link">
-              {item}
-            </a>
-          ))}
+          <button 
+            className="nav-link" 
+            onClick={() => setCurrentView('home')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            Overview
+          </button>
+          <button 
+            className="nav-link" 
+            onClick={() => setCurrentView('documentation')}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            Learn
+          </button>
+          <button 
+            className="nav-link" 
+            onClick={() => window.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' })}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          >
+            Upload
+          </button>
         </div>
         <div className="top-nav-actions">
-          <button className="button button-text-link" type="button">
-            Sign in
-          </button>
-          <button className="button button-primary" onClick={() => document.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' })}>
+          <button className="button button-primary" onClick={() => window.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' })}>
             Try Apriori
           </button>
           <button className="icon-button mobile-only" type="button" aria-label="Open menu">
@@ -610,24 +670,64 @@ function App() {
       </nav>
 
       <main>
-        <section id="overview" className="container hero-band">
+        <motion.section 
+          id="overview" 
+          className="container hero-band"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+        >
           <div className="hero-copy">
-            <span className="badge-coral">Association analysis</span>
-            <h1 className="display-xl hero-title">Discover hidden patterns in your data.</h1>
-            <p className="body-md hero-lead">
+            <motion.span 
+              className="badge-coral"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.15, duration: 0.4 }}
+            >
+              Association analysis
+            </motion.span>
+            <motion.h1 
+              className="display-xl hero-title"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+            >
+              Discover hidden patterns in your data.
+            </motion.h1>
+            <motion.p 
+              className="body-md hero-lead"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25, duration: 0.5 }}
+            >
               Upload your transaction dataset, configure the Apriori algorithm, and instantly find frequent itemsets and association rules. Powered by a warm, editorial interface.
-            </p>
-            <div className="hero-actions">
-              <a href="#upload" className="button button-primary">Start Analysis <ArrowRight size={16} /></a>
-              <a href="#features" className="button button-secondary">Learn More</a>
-            </div>
-            <div className="hero-meta">
+            </motion.p>
+            <motion.div 
+              className="hero-actions"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              <button onClick={() => window.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' })} className="button button-primary">Start Analysis <ArrowRight size={16} /></button>
+              <button onClick={() => setCurrentView('documentation')} className="button button-secondary">Learn More</button>
+            </motion.div>
+            <motion.div 
+              className="hero-meta"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.35, duration: 0.4 }}
+            >
               <span className="pill"><Sparkles size={14} /> Fast CSV workflow</span>
               <span className="pill"><Search size={14} /> Preview + rules</span>
-            </div>
+            </motion.div>
           </div>
           
-          <div className="card-dark code-window-card">
+          <motion.div 
+            className="card-dark code-window-card"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.25, duration: 0.5 }}
+          >
             <div className="code-window-header">
               <div className="window-dots" aria-hidden="true">
                 <span />
@@ -644,29 +744,69 @@ function App() {
               rules = association_rules(frequent_itemsets)<br />
               <span className="code-token code-accent">print</span>(rules.head())
             </div>
-          </div>
-        </section>
+          </motion.div>
+        </motion.section>
 
-        <section id="features" className="container feature-grid">
-          <article className="feature-card">
+        <motion.section 
+          id="features" 
+          className="container feature-grid"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+        >
+          <motion.article 
+            className="feature-card"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            viewport={{ once: true }}
+          >
             <BarChart2 size={24} className="feature-icon" />
             <h2 className="title-md">Frequent itemsets</h2>
             <p className="body-md">See the strongest product relationships detected from your transactions.</p>
-          </article>
-          <article className="feature-card">
+          </motion.article>
+          <motion.article 
+            className="feature-card"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15, duration: 0.4 }}
+            viewport={{ once: true }}
+          >
             <Settings size={24} className="feature-icon" />
             <h2 className="title-md">Tune thresholds</h2>
             <p className="body-md">Adjust support and confidence to control how strict the analysis is.</p>
-          </article>
-          <article className="feature-card">
-            <Upload size={24} className="feature-icon" />
-            <h2 className="title-md">Quick CSV flow</h2>
-            <p className="body-md">Upload a file, set columns, and get results without extra setup.</p>
-          </article>
-        </section>
+          </motion.article>
+          <motion.article 
+            className="feature-card"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+            viewport={{ once: true }}
+            onClick={() => setCurrentView('documentation')} 
+            style={{ cursor: 'pointer' }}
+          >
+            <BookOpen size={24} className="feature-icon" />
+            <h2 className="title-md">Learn Apriori</h2>
+            <p className="body-md">Understand definitions, algorithm steps, and calculation examples with interactive tooltips.</p>
+          </motion.article>
+        </motion.section>
 
-        <section id="upload" className="container section-padding">
-          <div className="card">
+        <motion.section 
+          id="upload" 
+          className="container section-padding"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+        >
+          <motion.div 
+            className="card"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.5 }}
+            viewport={{ once: true }}
+          >
             <div className="section-kicker">
               <Settings size={20} color="var(--colors-primary)" />
               <span className="badge-coral">Configuration</span>
@@ -723,13 +863,34 @@ function App() {
                 {error}
               </div>
             )}
-          </div>
-        </section>
+          </motion.div>
+        </motion.section>
 
         {results && (
-          <section id="results" className="container section-padding">
-            <h2 className="display-md section-title">Analysis Results</h2>
-            <div style={{ marginBottom: 12 }}>
+          <motion.section 
+            id="results" 
+            className="container section-padding"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+          >
+            <motion.h2 
+              className="display-md section-title"
+              initial={{ opacity: 0, y: 15 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.4 }}
+              viewport={{ once: true }}
+            >
+              Analysis Results
+            </motion.h2>
+            <motion.div 
+              style={{ marginBottom: 12 }}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ delay: 0.15, duration: 0.4 }}
+              viewport={{ once: true }}
+            >
               <div className="card">
                 <AprioriSteps
                   results={results}
@@ -739,22 +900,35 @@ function App() {
                   usedMinSupport={results?.stats?.adaptive_min_support ?? results?.stats?.used_min_support}
                 />
               </div>
-            </div>
-            {results.message && (
-              <div style={{ marginBottom: '20px', padding: '12px 14px', backgroundColor: 'var(--colors-surface-soft)', borderRadius: 'var(--rounded-md)', color: 'var(--colors-body-strong)' }}>
-                {results.message}
-              </div>
-            )}
-            {results.stats && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-                <div className="pill">Rows: {results.stats.rows_after_cleaning ?? '-'}</div>
-                <div className="pill">Transactions: {results.stats.transactions ?? '-'}</div>
-                <div className="pill">Items: {results.stats.items ?? '-'}</div>
-                <div className="pill">Itemsets: {results.stats.frequent_itemsets_total ?? results.frequent_itemsets?.length ?? 0}</div>
-              </div>
-            )}
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ delay: 0.15, duration: 0.4 }}
+              viewport={{ once: true }}
+            >
+              {results.message && (
+                <div style={{ marginBottom: '20px', padding: '12px 14px', backgroundColor: 'var(--colors-surface-soft)', borderRadius: 'var(--rounded-md)', color: 'var(--colors-body-strong)' }}>
+                  {results.message}
+                </div>
+              )}
+              {results.stats && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+                  <div className="pill">Rows: {results.stats.rows_after_cleaning ?? '-'}</div>
+                  <div className="pill">Transactions: {results.stats.transactions ?? '-'}</div>
+                  <div className="pill">Items: {results.stats.items ?? '-'}</div>
+                  <div className="pill">Itemsets: {results.stats.frequent_itemsets_total ?? results.frequent_itemsets?.length ?? 0}</div>
+                </div>
+              )}
+            </motion.div>
             
-            <div className="results-grid">
+            <motion.div 
+              className="results-grid"
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              viewport={{ once: true }}
+            >
               <div>
                 <h3 className="title-lg section-subtitle">Dataset Preview</h3>
                 <div className="table-shell">
@@ -850,8 +1024,8 @@ function App() {
                   <p className="body-md">No rules generated. Try adjusting support or confidence thresholds.</p>
                 )}
               </div>
-            </div>
-          </section>
+            </motion.div>
+          </motion.section>
         )}
       </main>
 
