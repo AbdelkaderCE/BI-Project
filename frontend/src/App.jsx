@@ -505,6 +505,7 @@ function App() {
   const [itemCol, setItemCol] = useState('');
   const [minSupport, setMinSupport] = useState(0.01);
   const [minConfidence, setMinConfidence] = useState(0.5);
+  const [logoAvailable, setLogoAvailable] = useState(true);
   
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
@@ -652,8 +653,10 @@ function App() {
     <div className="App">
       <nav className="top-nav">
         <div className="top-nav-brand">
-          <span className="brand-mark" aria-hidden="true">*</span>
-          <span className="title-md">Apriori Analytics</span>
+          <a href="#overview" className="brand-link" aria-label="Apriori Analytics home">
+            <img src="/images/Apriori.png" alt="Apriori logo" className="app-logo" onLoad={() => setLogoAvailable(true)} onError={() => setLogoAvailable(false)} />
+          </a>
+           <span className={`title-md ${logoAvailable ? 'visually-hidden' : ''}`}>Apriori Analytics</span>
         </div>
         <div className="top-nav-links" aria-label="Primary navigation">
           <button 
