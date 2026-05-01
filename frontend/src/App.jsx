@@ -3,6 +3,7 @@ import axios from 'axios';
 import { ArrowRight, BarChart2, Lightbulb, Link2, Menu, Search, Settings, Sparkles, Star, Target, Upload } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import './index.css';
+import AprioriSteps from './components/AprioriSteps';
 
 const MAX_UPLOAD_MB = 25;
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
@@ -681,6 +682,7 @@ function App() {
                   <input type="file" accept=".csv" onChange={handleFileChange} style={{ display: 'none' }} id="file-upload" />
                   <label htmlFor="file-upload" className="button button-secondary">Select File</label>
                 </div>
+                
               </div>
 
               <div>
@@ -727,6 +729,17 @@ function App() {
         {results && (
           <section id="results" className="container section-padding">
             <h2 className="display-md section-title">Analysis Results</h2>
+            <div style={{ marginBottom: 12 }}>
+              <div className="card">
+                <AprioriSteps
+                  results={results}
+                  transactionCol={transactionCol}
+                  itemCol={itemCol}
+                  associationRules={associationRules}
+                  usedMinSupport={results?.stats?.adaptive_min_support ?? results?.stats?.used_min_support}
+                />
+              </div>
+            </div>
             {results.message && (
               <div style={{ marginBottom: '20px', padding: '12px 14px', backgroundColor: 'var(--colors-surface-soft)', borderRadius: 'var(--rounded-md)', color: 'var(--colors-body-strong)' }}>
                 {results.message}
