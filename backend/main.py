@@ -77,6 +77,21 @@ def run_apriori(
         transaction_count = int(df[transaction_col].nunique())
         item_count = int(df[item_col].nunique())
 
+        transaction_preview_df = (
+            df.groupby(transaction_col, sort=False)[item_col]
+            .agg(lambda values: list(dict.fromkeys(values.tolist())))
+            .reset_index()
+            .head(5)
+        )
+        transaction_preview = [
+            {
+                "transaction_id": row[transaction_col],
+                "items": row[item_col],
+                "item_count": len(row[item_col]),
+            }
+            for _, row in transaction_preview_df.iterrows()
+        ]
+
         if transaction_count > MAX_TRANSACTIONS:
             raise HTTPException(
                 status_code=422,
@@ -97,6 +112,7 @@ def run_apriori(
             return {
                 "columns": columns,
                 "preview": preview,
+                "transaction_preview": [],
                 "frequent_itemsets": [],
                 "association_rules": [],
                 "message": "No frequent itemsets found. Try lowering minimum support.",
@@ -144,6 +160,7 @@ def run_apriori(
             return {
                 "columns": columns,
                 "preview": preview,
+                "transaction_preview": transaction_preview,
                 "frequent_itemsets": [],
                 "association_rules": [],
                 "message": "No frequent itemsets found with the given minimum support.",
@@ -184,6 +201,7 @@ def run_apriori(
         return {
             "columns": columns,
             "preview": preview,
+            "transaction_preview": transaction_preview,
             "frequent_itemsets": freq_items_list[:MAX_RESULTS],
             "association_rules": rules_list[:MAX_RESULTS],
             "message": "Apriori algorithm executed successfully.",
@@ -191,6 +209,7 @@ def run_apriori(
                 "rows_after_cleaning": int(len(df)),
                 "transactions": transaction_count,
                 "items": item_count,
+                "preview_transactions": len(transaction_preview),
                 "frequent_itemsets_total": int(len(freq_items_list)),
                 "association_rules_total": int(len(rules_list)),
                 "max_itemset_size": MAX_ITEMSET_SIZE,

@@ -7,11 +7,14 @@ function summarizeTransactions(preview, transactionCol, itemCol, maxPreview = 6)
 
   const txMap = new Map();
   for (const row of preview) {
-    const tx = row[transactionCol];
-    const item = row[itemCol];
+    const tx = row.transaction_id ?? row.id ?? row[transactionCol];
     if (!tx) continue;
     if (!txMap.has(tx)) txMap.set(tx, new Set());
-    if (item) txMap.get(tx).add(String(item));
+
+    const items = Array.isArray(row.items) ? row.items : [row[itemCol]];
+    for (const item of items) {
+      if (item) txMap.get(tx).add(String(item));
+    }
   }
 
   const transactions = Array.from(txMap.entries()).map(([id, set]) => ({ id, items: Array.from(set) }));
@@ -66,20 +69,23 @@ function countSupportForCandidates(transactions, candidates) {
 }
 
 export default function AprioriSteps({ results, transactionCol, itemCol, associationRules, usedMinSupport }) {
-  const preview = results?.preview || [];
+  const preview = results?.transaction_preview?.length ? results.transaction_preview : (results?.preview || []);
   const [open, setOpen] = useState(false);
 
   const { transactions, stats } = useMemo(() => summarizeTransactions(preview, transactionCol, itemCol), [preview, transactionCol, itemCol]);
 
   const allTransactions = useMemo(() => {
-    // Build full transaction list (if results.preview is only a sample this is best-effort)
+    // Build a transaction-level sample for the educational walkthrough.
     const txMap = new Map();
     for (const row of preview) {
-      const tx = row[transactionCol];
-      const item = row[itemCol];
+      const tx = row.transaction_id ?? row.id ?? row[transactionCol];
       if (!tx) continue;
       if (!txMap.has(tx)) txMap.set(tx, new Set());
-      if (item) txMap.get(tx).add(String(item));
+
+      const items = Array.isArray(row.items) ? row.items : [row[itemCol]];
+      for (const item of items) {
+        if (item) txMap.get(tx).add(String(item));
+      }
     }
     return Array.from(txMap.entries()).map(([id, set]) => ({ id, items: Array.from(set) }));
   }, [preview, transactionCol, itemCol]);

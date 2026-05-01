@@ -352,6 +352,18 @@ function RelationshipMap({ rules, maxRulesToShow = 10 }) {
     });
   };
 
+  const getLabelPlacement = (point, nodeRadius) => {
+    const offset = nodeRadius + 16;
+    const toRight = point.x >= width / 2;
+    const toBottom = point.y >= height / 2;
+
+    return {
+      x: point.x + (toRight ? offset : -offset),
+      y: point.y + (toBottom ? offset * 0.65 : -offset * 0.65),
+      anchor: toRight ? 'start' : 'end',
+    };
+  };
+
   const handleNodeHover = (nodeName, x, y) => {
     setHoveredNode(nodeName);
     const tooltipPosition = getClampedTooltipPosition(x, y);
@@ -433,6 +445,8 @@ function RelationshipMap({ rules, maxRulesToShow = 10 }) {
               const nodeRadius = 12 + (node.support / maxSupport) * 14;
               const isHovered = hoveredNode === node.name;
               const isSelected = selectedNode?.name === node.name;
+              const labelPlacement = getLabelPlacement(point, nodeRadius);
+              const labelText = node.name.length > 20 ? `${node.name.slice(0, 20)}…` : node.name;
 
               return (
                 <motion.g
@@ -464,18 +478,17 @@ function RelationshipMap({ rules, maxRulesToShow = 10 }) {
                     transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
                   />
                   <motion.text
-                    x={point.x}
-                    y={point.y + nodeRadius + 26}
-                    textAnchor="middle"
+                    x={labelPlacement.x}
+                    y={labelPlacement.y}
+                    textAnchor={labelPlacement.anchor}
                     className="map-node-label"
                     animate={{
-                      opacity: isHovered || isSelected ? 1 : 0.7,
+                      opacity: isHovered || isSelected ? 1 : 0.82,
                       fontSize: isHovered || isSelected ? 13 : 12,
-                      y: point.y + nodeRadius + (isHovered || isSelected ? 28 : 26),
                     }}
                     transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
                   >
-                    {node.name.length > 20 ? `${node.name.slice(0, 20)}…` : node.name}
+                    {labelText}
                   </motion.text>
                 </motion.g>
               );
@@ -585,6 +598,9 @@ function App() {
   const filteredRules = useMemo(() => {
     return associationRules.filter((rule) => rule.support >= supportFilter);
   }, [associationRules, supportFilter]);
+
+  const datasetPreview = results?.transaction_preview?.length ? results.transaction_preview : (results?.preview || []);
+  const showTransactionPreview = Boolean(results?.transaction_preview?.length);
 
   // Render documentation view if selected
   if (currentView === 'documentation') {
@@ -972,13 +988,29 @@ function App() {
                   <table>
                     <thead>
                       <tr>
-                        {results.columns?.map(col => <th key={col}>{col}</th>)}
+                        {showTransactionPreview ? (
+                          <>
+                            <th>Transaction</th>
+                            <th>Items</th>
+                            <th>Item Count</th>
+                          </>
+                        ) : (
+                          results.columns?.map(col => <th key={col}>{col}</th>)
+                        )}
                       </tr>
                     </thead>
                     <tbody>
-                      {results.preview?.map((row, idx) => (
+                      {datasetPreview.map((row, idx) => (
                         <tr key={idx}>
-                          {results.columns?.map(col => <td key={col}>{row[col]}</td>)}
+                          {showTransactionPreview ? (
+                            <>
+                              <td>{row.transaction_id}</td>
+                              <td>{Array.isArray(row.items) ? row.items.join(', ') : ''}</td>
+                              <td>{row.item_count ?? (Array.isArray(row.items) ? row.items.length : 0)}</td>
+                            </>
+                          ) : (
+                            results.columns?.map(col => <td key={col}>{row[col]}</td>)
+                          )}
                         </tr>
                       ))}
                     </tbody>
