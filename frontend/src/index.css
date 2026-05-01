@@ -261,6 +261,51 @@ h1, h2, h3, h4, h5, h6 {
   display: none;
 }
 
+/* Mobile menu overlay (hidden by default; shown when .open added) */
+.mobile-menu {
+  display: none;
+}
+
+/* mobile menu inner panel */
+.mobile-menu .mobile-menu-inner {
+  position: fixed;
+  top: 64px;
+  left: 0;
+  right: 0;
+  background: var(--colors-canvas);
+  border-top: 1px solid var(--colors-hairline-soft);
+  box-shadow: 0 8px 24px rgba(20,20,20,0.06);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  z-index: 60;
+  transform: translateY(-6px);
+  opacity: 0;
+  transition: transform 180ms ease, opacity 180ms ease;
+}
+
+.mobile-menu.open { display: block; }
+.mobile-menu.open .mobile-menu-inner { transform: translateY(0); opacity: 1; }
+
+.mobile-link {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--colors-ink);
+  cursor: pointer;
+}
+
+.mobile-link.primary {
+  background: var(--colors-primary);
+  color: var(--colors-on-primary);
+  border-radius: var(--rounded-md);
+  padding: 10px 12px;
+}
+
 .hero-band {
   display: grid;
   grid-template-columns: 1fr 1fr;

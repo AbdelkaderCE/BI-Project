@@ -499,6 +499,7 @@ function RelationshipMap({ rules, maxRulesToShow = 10 }) {
 
 function App() {
   const [currentView, setCurrentView] = useState('home'); // 'home', 'documentation', 'upload', 'results'
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [file, setFile] = useState(null);
   const [transactionCol, setTransactionCol] = useState('');
   const [itemCol, setItemCol] = useState('');
@@ -617,9 +618,27 @@ function App() {
             </button>
           </div>
           <div className="top-nav-actions">
-            <button className="button button-primary" onClick={() => setCurrentView('home')}>
+            <button className="button button-primary" onClick={() => { setCurrentView('home'); setMobileMenuOpen(false); }}>
               Try Apriori
             </button>
+            <button
+              className="icon-button mobile-only"
+              type="button"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-menu"
+              onClick={() => setMobileMenuOpen((s) => !s)}
+            >
+              <Menu size={18} />
+            </button>
+          </div>
+          <div id="mobile-menu" className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`} role="region" aria-hidden={!mobileMenuOpen}>
+            <div className="mobile-menu-inner">
+              <button className="mobile-link" onClick={() => { setCurrentView('home'); setMobileMenuOpen(false); }}>Overview</button>
+              <button className="mobile-link" onClick={() => { setCurrentView('documentation'); setMobileMenuOpen(false); }}>Learn</button>
+              <button className="mobile-link" onClick={() => { setCurrentView('home'); setMobileMenuOpen(false); }}>Upload</button>
+              <button className="mobile-link primary" onClick={() => { window.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); }}>Try Apriori</button>
+            </div>
           </div>
         </nav>
         <main>
@@ -639,33 +658,48 @@ function App() {
         <div className="top-nav-links" aria-label="Primary navigation">
           <button 
             className="nav-link" 
-            onClick={() => setCurrentView('home')}
+            onClick={() => { setCurrentView('home'); setMobileMenuOpen(false); }}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
             Overview
           </button>
           <button 
             className="nav-link" 
-            onClick={() => setCurrentView('documentation')}
+            onClick={() => { setCurrentView('documentation'); setMobileMenuOpen(false); }}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
             Learn
           </button>
           <button 
             className="nav-link" 
-            onClick={() => window.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' })}
+            onClick={() => { window.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); }}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
           >
             Upload
           </button>
         </div>
         <div className="top-nav-actions">
-          <button className="button button-primary" onClick={() => window.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' })}>
+          <button className="button button-primary" onClick={() => { window.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); }}>
             Try Apriori
           </button>
-          <button className="icon-button mobile-only" type="button" aria-label="Open menu">
+          <button
+            className="icon-button mobile-only"
+            type="button"
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
+            onClick={() => setMobileMenuOpen((s) => !s)}
+          >
             <Menu size={18} />
           </button>
+        </div>
+        <div id="mobile-menu" className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`} role="region" aria-hidden={!mobileMenuOpen}>
+          <div className="mobile-menu-inner">
+            <button className="mobile-link" onClick={() => { setCurrentView('home'); setMobileMenuOpen(false); }}>Overview</button>
+            <button className="mobile-link" onClick={() => { setCurrentView('documentation'); setMobileMenuOpen(false); }}>Learn</button>
+            <button className="mobile-link" onClick={() => { window.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); }}>Upload</button>
+            <button className="mobile-link primary" onClick={() => { window.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' }); setMobileMenuOpen(false); }}>Try Apriori</button>
+          </div>
         </div>
       </nav>
 
