@@ -1,7 +1,7 @@
 \documentclass[12pt,a4paper]{report}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
+
+% --- Essential Packages ---
+\usepackage{xcolor} % Required for defining colors like gray/blue
 \usepackage{graphicx}
 \usepackage{amsmath,amssymb}
 \usepackage{hyperref}
@@ -11,7 +11,13 @@
 \usepackage{enumitem}
 \usepackage{float}
 \usepackage{listings}
-\usepackage{color}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+
+% --- Language Setup ---
+\setmainlanguage{english}
+\setotherlanguage{arabic}
+\newfontfamily\arabicfont[Script=Arabic]{Amiri} % Amiri is standard on Overleaf
 
 \geometry{
   left=30mm,
@@ -26,10 +32,11 @@
   urlcolor=blue,
   citecolor=black,
   pdftitle={Apriori Algorithm and Its Implementation in a Web Application},
-  pdfauthor={Student Name},
+  pdfauthor={Djellil, Gaid, Ouaddah},
   pdfsubject={University Project}
 }
 
+% --- Listings (Code) Setup ---
 \lstset{
   basicstyle=\ttfamily\small,
   breaklines=true,
@@ -47,22 +54,57 @@
 % Title page
 % -------------------------
 \begin{titlepage}
-  \centering
-  {\scshape\LARGE University Name \par}
-  \vspace{2cm}
-  {\scshape\Large Department of Computer Science \par}
-  \vspace{2.5cm}
-  {\huge\bfseries Apriori Algorithm and Its Implementation in a Web Application \par}
-  \vspace{1.5cm}
-  {\Large\itshape Student Name\par}
-  \vfill
-  A project report submitted in partial fulfillment of the requirements for the\\
-  degree of Bachelor/Master of Science in Computer Science
+    \centering
+    
+    % --- Administrative Header ---
+    {\Large \textarabic{الجمهورية الجزائرية الديمقراطية الشعبية}} \\
+    {\Large \textarabic{وزارة التعليم العالي والبحث العلمي}} \\
+    
+    \vspace{0.6cm}
+    
+    {\Large \textbf{\textarabic{جامعة ابن خلدون - تيارت}}} \\
+    {\Large \textbf{\textarabic{كلية الرياضيات والإعلام الآلي}}} \\
+    {\large \textbf{\textarabic{قسم الإعلام الآلي}}} \\
+    
+    \vspace{1cm}
+    
+    % --- University Logo Placeholder ---
+    % Adjust the width (e.g., 3cm or 4cm) to fit your specific logo file
+    \includegraphics[width=3.5cm]{logo_univ.png} 
+    
+    \vspace{1cm}
+    
+    \hrule height 1.5pt
+    \vspace{0.8cm}
+    {\huge \bfseries Apriori Algorithm and Its Implementation in a Web Application \par}
+    \vspace{0.8cm}
+    \hrule height 1.5pt
+    
+    \vspace{1.5cm}
+    {\Large \textbf{Mini Project Report}} \\
+    \vspace{2cm}
+    
+    \begin{minipage}[t]{0.5\textwidth}
+        \flushleft
+        \textbf{Prepared by:}\\
+        \vspace{0.3cm}
+        Djellil Abdelkader Charef Eddine\\
+        Gaid Oussama\\
+        Ouaddah Abdelkader
+    \end{minipage}
+    \begin{minipage}[t]{0.4\textwidth}
+        \flushright
+        \textbf{Supervised by:}\\
+        \vspace{0.3cm}
+        Mr. Talbi Omar
+    \end{minipage}
 
-  \vspace{1.5cm}
-  {\large Supervisor: Dr. Supervisor Name \par}
-  \vspace{2cm}
-  {\large May 1, 2026 \par}
+    \vfill
+    
+    \hrule
+    \vspace{0.4cm}
+    {\large Academic Year: 2025 / 2026 \par}
+    
 \end{titlepage}
 
 % -------------------------
@@ -189,7 +231,7 @@ The architecture consists of two main components:
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.85\textwidth]{images/architecture_diagram.png}
+  \includegraphics[width=0.85\textwidth]{architecture_diagram.png}
   \caption{High-level system architecture: React frontend communicates with Python backend via REST API endpoints.}
   \label{fig:architecture}
 \end{figure}
@@ -291,88 +333,61 @@ This chapter illustrates typical outputs from the Apriori implementation. Screen
 \section{Dataset Upload and Preview}
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.9\textwidth]{images/dataset_upload.png}
-  \caption{Dataset upload interface (placeholder). This screenshot should show the file selection button, parameter fields (transaction ID column, item column), and the min support/min confidence controls.}
+  \includegraphics[width=0.9\textwidth]{dataset_upload.png}
+  \caption{Dataset upload interface.}
   \label{fig:upload}
 \end{figure}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.9\textwidth]{images/dataset_preview.png}
-  \caption{Dataset preview (placeholder). Show a few rows of the raw CSV so the user can confirm column mappings.}
+  \includegraphics[width=0.9\textwidth]{dataset_preview.png}
+  \caption{Dataset preview .}
   \label{fig:preview}
 \end{figure}
 
 \section{Transaction Transformation}
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.9\textwidth]{images/transaction_transformation.png}
-  \caption{Transaction transformation (placeholder). Show the resulting transactions produced from grouping by transaction id, typically a small table: transaction id \\\rightarrow item list.}
+  \includegraphics[width=0.9\textwidth]{transaction_transformation.png}
+  \caption{Transaction transformation.}
   \label{fig:transformation}
 \end{figure}
 
 \section{Frequent Itemsets: L1, C2, L2, ...}
 We demonstrate the iterative generation of frequent itemsets. For a small toy dataset, the process is:
 
-\begin{table}[H]
-  \centering
-  \caption{Toy dataset (example).}
-  \begin{tabular}{ll}
-    \toprule
-    Transaction ID & Items \\
-    \midrule
-    T1 & \{bread, milk\} \\
-    T2 & \{bread, diaper, beer, eggs\} \\
-    T3 & \{milk, diaper, beer, coke\} \\
-    T4 & \{bread, milk, diaper, beer\} \\
-    T5 & \{bread, milk, diaper, coke\} \\
-    \bottomrule
-  \end{tabular}
-\end{table}
 
-Assume min\_support = 0.6 (i.e., itemset must appear in at least 3 of 5 transactions).
+Assume \textbf{min\_support = 0.1 (i.e., itemset must appear in at least 1 of 5 transactions)}. 
 
-\subsection{L1 (frequent 1-itemsets)}
-Calculate support for each item:
-\begin{align*}
-  \text{support}(\text{bread}) &= 4/5 = 0.8 \\
-  \text{support}(\text{milk}) &= 4/5 = 0.8 \\
-  \text{support}(\text{diaper}) &= 4/5 = 0.8 \\
-  \text{support}(\text{beer}) &= 3/5 = 0.6 \\
-  \text{support}(\text{coke}) &= 2/5 = 0.4 \\
-  \text{support}(\text{eggs}) &= 1/5 = 0.2
-\end{align*}
-
-L1 = \{bread, milk, diaper, beer\}.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.9\textwidth]{images/L1_table.png}
-  \caption{L1 table (placeholder). Include item and support columns for frequent 1-itemsets.}
+  \includegraphics[width=0.9\textwidth]{L1_table.png}
+  \caption{L1 table.}
   \label{fig:L1}
 \end{figure}
 
 \subsection{Candidate generation: C2}
-Join step for \(L_1\) yields candidate 2-itemsets \(C_2\): \{bread,milk\}, \{bread,diaper\}, \{bread,beer\}, \{milk,diaper\}, \{milk,beer\}, \{diaper,beer\}. Count supports across transactions, prune those below min\_support.
+Join step for \(L_1\) yields candidate 2-itemsets \(C_2\):
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.9\textwidth]{images/C2_counts.png}
-  \caption{C2 candidate counts (placeholder). This screenshot should show candidate pairs and their support counts.}
+  \includegraphics[width=0.9\textwidth]{C2_counts.png}
+  \caption{C2 candidate counts.}
   \label{fig:C2}
 \end{figure}
 
 \subsection{L2 (frequent 2-itemsets)}
 After pruning:
 \[
-L_2 = \{\{\text{bread,milk}\}, \{\text{bread,diaper}\}, \{\text{milk,diaper}\}, \{\text{diaper,beer}\}\}
+L_2
 \]
 (Example values depend on dataset.)
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.9\textwidth]{images/L2_table.png}
-  \caption{L2 table (placeholder). Frequent 2-itemsets and their support values.}
+  \includegraphics[width=0.9\textwidth]{L2_table.png}
+  \caption{L2 table.}
   \label{fig:L2}
 \end{figure}
 
@@ -381,43 +396,34 @@ Pruning eliminates candidate itemsets having a subset not present in previous fr
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.9\textwidth]{images/pruning_example.png}
-  \caption{Pruning example (placeholder). Show candidate and the missing subset used to prune it.}
+  \includegraphics[width=0.9\textwidth]{pruning_example.png}
+  \caption{Pruning example.}
   \label{fig:pruning}
 \end{figure}
 
 \section{Association Rules and Interpretation}
-From frequent itemsets we generate candidate rules. Example: from itemset \{diaper, beer\} with support \(0.6\), we can propose rules:
 
-\begin{itemize}[nosep]
-  \item \(\{\text{diaper}\} \Rightarrow \{\text{beer}\}\) with
-  \[
-  \text{confidence} = \frac{\text{support}(\{\text{diaper,beer}\})}{\text{support}(\{\text{diaper}\})}.
-  \]
-  \item \(\{\text{beer}\} \Rightarrow \{\text{diaper}\}\) similarly.
-\end{itemize}
+
 
 Compute lift to gauge strength beyond random occurrence.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.95\textwidth]{images/final_rules_table.png}
-  \caption{Final association rules table (placeholder). Include antecedent, consequent, support, confidence, lift, and short interpretation/insight per rule.}
+  \includegraphics[width=0.95\textwidth]{final_rules_table.png}
+  \caption{Final association rules table.}
   \label{fig:final-rules}
 \end{figure}
 
 \section{Visualization}
 Visualizations help to interpret rules. Examples include:
 \begin{itemize}[nosep]
-  \item Bar charts of top frequent itemsets by support.
   \item Network/relationship maps (nodes = items, edges = rules with weight = confidence/lift).
-  \item Interactive rule cards with buttons to promote, discount, or create marketing bundles.
 \end{itemize}
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.9\textwidth]{images/relationship_map.png}
-  \caption{Relationship map visualization (placeholder). Shows items as nodes and rules as directed edges; edge thickness encodes confidence/lift.}
+  \includegraphics[width=0.9\textwidth]{relationship_map.png}
+  \caption{Relationship map visualization .}
   \label{fig:relationship-map}
 \end{figure}
 
@@ -439,11 +445,7 @@ Key takeaways:
 \section*{Future Work}
 Potential improvements and extensions:
 \begin{itemize}[nosep]
-  \item Implement more scalable algorithms such as FP-Growth to handle larger datasets without expensive candidate generation.
-  \item Add incremental mining to update frequent itemsets when new transactions arrive.
   \item Improve UI/UX: add interactive filtering, threshold sliders, export of rules, and A/B testing workflows for recommended bundles.
-  \item Add better performance optimizations in backend (Cython, vectorized counting, parallel processing).
-  \item Evaluate rules using business KPIs (lift vs. realized uplift in sales) by integrating historical promotion data.
 \end{itemize}
 
 % -------------------------
@@ -479,28 +481,5 @@ Facebook Inc.
 % -------------------------
 % Appendix: Additional material and screenshot placeholders
 % -------------------------
-\appendix
-\chapter{Appendix: Screenshot placeholders and notes}
-
-Below is the list of recommended screenshots to capture and include in the final PDF. Replace the placeholder image files (in \texttt{images/}) with actual captures:
-
-\begin{enumerate}[nosep]
-  \item \textbf{Dataset upload interface:} file chooser, parameter fields, min support/confidence sliders. (Replace \texttt{images/dataset\_upload.png}.)
-  \item \textbf{Dataset preview:} show a tabular view of raw CSV columns and sample rows. (Replace \texttt{images/dataset\_preview.png}.)
-  \item \textbf{Transaction transformation:} grouping and resulting transactions list or preview. (Replace \texttt{images/transaction\_transformation.png}.)
-  \item \textbf{L1 table:} frequent 1-itemset table. (Replace \texttt{images/L1\_table.png}.)
-  \item \textbf{C2 and counting step:} candidate list with counts. (Replace \texttt{images/C2\_counts.png}.)
-  \item \textbf{L2 table and pruning example:} show pruning logic removing candidates. (Replace \texttt{images/L2\_table.png} and \texttt{images/pruning\_example.png}.)
-  \item \textbf{Final rules table:} antecedent, consequent, support, confidence, lift, interpretation. (Replace \texttt{images/final\_rules\_table.png}.)
-  \item \textbf{Relationship map:} network visualization of items and rules. (Replace \texttt{images/relationship\_map.png}.)
-\end{enumerate}
-
-\bigskip
-Notes on capturing screenshots:
-\begin{itemize}[nosep]
-  \item Use a consistent viewport (e.g., 1280×720) for clarity.
-  \item Highlight the UI controls used (e.g., active min\_support value).
-  \item If possible, include a short caption describing the purpose of each screenshot.
-\end{itemize}
 
 \end{document}
