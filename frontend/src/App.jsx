@@ -1,10 +1,499 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import { ArrowRight, BarChart2, Menu, Search, Settings, Sparkles, Upload } from 'lucide-react';
+import { ArrowRight, BarChart2, Lightbulb, Link2, Menu, Search, Settings, Sparkles, Star, Target, Upload } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import './index.css';
 
 const MAX_UPLOAD_MB = 25;
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
+const cardContainerVariants = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.08,
+    },
+  },
+};
+
+const cardItemVariants = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+  exit: { opacity: 0, y: -12, transition: { duration: 0.2 } },
+};
+
+function getConfidenceClass(confidence) {
+  if (confidence >= 0.8) {
+    return 'confidence-high';
+  }
+  if (confidence >= 0.6) {
+    return 'confidence-medium';
+  }
+  return 'confidence-low';
+}
+
+// Extract category from product name (e.g., "ALARM CLOCK" → "ALARM")
+function extractCategory(itemName) {
+  const name = String(itemName).toUpperCase();
+  const keywords = ['ALARM', 'CLOCK', 'BAG', 'BOX', 'SET', 'LANTERN', 'HEART', 'COAT', 'HANGER', 'BOTTLE', 'HAND', 'WARMER', 'BIRD', 'ORNAMENT', 'DOLL', 'POPPY', 'MUG', 'COSY', 'TEASPOON', 'JIGSAW', 'BLOCK', 'JAM', 'RACK', 'PARIS', 'CHARLOTTE', 'DOLLY', 'GIRL', 'FLOATING', 'POLITICAL', 'GLOBE', 'INFLATABLE', 'LUNCH', 'BOX', 'CIRCUS', 'PARADE'];
+  for (const keyword of keywords) {
+    if (name.includes(keyword)) {
+      return keyword;
+    }
+  }
+  return name.split(' ')[0] || 'ITEM';
+}
+
+// Map categories to distinct hues
+function getCategoryColor(category) {
+  const colorMap = {
+    'ALARM': '#e8a55a',      // amber
+    'CLOCK': '#d4a017',      // warm amber
+    'BAG': '#cc785c',        // coral
+    'BOX': '#c9876f',        // soft coral
+    'SET': '#b8956a',        // warm brown
+    'LANTERN': '#e8a55a',    // amber
+    'HEART': '#ff9999',      // warm red
+    'COAT': '#cc785c',       // coral
+    'HANGER': '#9d7e6e',     // taupe
+    'BOTTLE': '#8fb3a1',     // sage
+    'HAND': '#c9876f',       // soft coral
+    'WARMER': '#d4a017',     // warm amber
+    'BIRD': '#7eb8a0',       // teal
+    'ORNAMENT': '#e8a55a',   // amber
+    'DOLL': '#cc785c',       // coral
+    'POPPY': '#ff99bb',      // warm pink
+    'MUG': '#8fb3a1',        // sage
+    'COSY': '#c9876f',       // soft coral
+    'TEASPOON': '#9d7e6e',   // taupe
+    'JIGSAW': '#b8956a',     // warm brown
+    'BLOCK': '#8fb3a1',      // sage
+    'JAM': '#e8a55a',        // amber
+    'RACK': '#b8956a',       // warm brown
+    'PARIS': '#cc785c',      // coral
+  };
+  return colorMap[category] || '#5db8a6'; // default teal
+}
+
+const nodeVariants = {
+  hidden: { opacity: 0, scale: 0.75 },
+  visible: (index) => ({
+    opacity: 1,
+    scale: 1,
+    transition: {
+      delay: index * 0.05,
+      duration: 0.55,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  }),
+};
+
+function createNodeLayout(nodes, width, height) {
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const radius = Math.min(width, height) * 0.32;
+
+  const hashString = (value) => {
+    let hash = 0;
+    for (let index = 0; index < value.length; index += 1) {
+      hash = (hash * 31 + value.charCodeAt(index)) % 1000;
+    }
+    return hash / 1000;
+  };
+
+  return new Map(
+    nodes.map((node, index) => {
+      const stableJitter = (hashString(node.name) - 0.5) * 0.28;
+      const angle = (2 * Math.PI * index) / Math.max(nodes.length, 1) + stableJitter;
+      return [
+        node.name,
+        {
+          x: centerX + radius * Math.cos(angle),
+          y: centerY + radius * Math.sin(angle),
+        },
+      ];
+    })
+  );
+}
+
+function buildRelationshipMapData(rules, topN = 10) {
+  const topRules = rules.slice(0, topN);
+  const nodeMap = new Map(); // item name → { support, category, color, connections }
+  const edges = [];
+
+  topRules.forEach((rule, index) => {
+    const antecedents = Array.isArray(rule.antecedents) ? rule.antecedents : [];
+    const consequents = Array.isArray(rule.consequents) ? rule.consequents : [];
+
+    antecedents.forEach((antecedent) => {
+      if (!nodeMap.has(antecedent)) {
+        const category = extractCategory(antecedent);
+        nodeMap.set(antecedent, {
+          name: antecedent,
+          support: rule.support || 0,
+          category,
+          color: getCategoryColor(category),
+          connections: { inbound: [], outbound: [] },
+        });
+      }
+    });
+
+    consequents.forEach((consequent) => {
+      if (!nodeMap.has(consequent)) {
+        const category = extractCategory(consequent);
+        nodeMap.set(consequent, {
+          name: consequent,
+          support: rule.support || 0,
+          category,
+          color: getCategoryColor(category),
+          connections: { inbound: [], outbound: [] },
+        });
+      }
+    });
+
+    antecedents.forEach((antecedent) => {
+      consequents.forEach((consequent) => {
+        const edgeId = `${index}-${antecedent}-${consequent}`;
+        edges.push({
+          id: edgeId,
+          from: antecedent,
+          to: consequent,
+          lift: Number(rule.lift) || 0,
+          confidence: Number(rule.confidence) || 0,
+          support: Number(rule.support) || 0,
+        });
+
+        nodeMap.get(antecedent).connections.outbound.push(consequent);
+        nodeMap.get(consequent).connections.inbound.push(antecedent);
+      });
+    });
+  });
+
+  const nodes = Array.from(nodeMap.values());
+  return { nodes, edges, totalRules: rules.length, displayedRules: topRules.length };
+}
+
+function Tooltip({ content, x, y }) {
+  return (
+    <motion.div
+      className="map-tooltip"
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: 0.2 }}
+      style={{
+        position: 'absolute',
+        left: `${x}px`,
+        top: `${y}px`,
+      }}
+    >
+      {content}
+    </motion.div>
+  );
+}
+
+function InsightsSidebar({ selectedNode, edges, nodes }) {
+  if (!selectedNode) {
+    return (
+      <motion.div
+        className="insights-sidebar"
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: 20 }}
+        transition={{ duration: 0.3 }}
+      >
+        <p className="body-sm insights-placeholder">Hover or click a node to see insights</p>
+      </motion.div>
+    );
+  }
+
+  // Find all rules involving this node
+  const relatedEdges = edges.filter((e) => e.from === selectedNode.name || e.to === selectedNode.name);
+  const avgLift = relatedEdges.length > 0 ? (relatedEdges.reduce((sum, e) => sum + e.lift, 0) / relatedEdges.length).toFixed(2) : 0;
+  const maxConfidence = relatedEdges.length > 0 ? Math.max(...relatedEdges.map((e) => e.confidence)).toFixed(2) : 0;
+  const inboundCount = relatedEdges.filter((e) => e.to === selectedNode.name).length;
+  const outboundCount = relatedEdges.filter((e) => e.from === selectedNode.name).length;
+
+  let insight = '';
+  let title = 'Insights';
+  let Icon = Lightbulb;
+
+  if (avgLift > 1.5 && outboundCount > inboundCount) {
+    insight = `Strong driver in bundles. When customers buy ${selectedNode.name.toLowerCase()}, they're ${(avgLift * 100).toFixed(0)}% more likely to buy related items.`;
+    title = 'Bundling Opportunity';
+    Icon = Target;
+  } else if (avgLift > 1.5 && inboundCount > outboundCount) {
+    insight = `Frequently paired with other items. ${selectedNode.name.toLowerCase()} appears in ${inboundCount} high-confidence rules.`;
+    title = 'Popular Pairing';
+    Icon = Link2;
+  } else if (maxConfidence > 0.8) {
+    insight = `High-confidence associations. Customers buying this item consistently buy complementary products (${(maxConfidence * 100).toFixed(0)}% confidence).`;
+    title = 'High Confidence';
+    Icon = Star;
+  } else {
+    insight = `Moderate associations detected. Consider promoting this item alongside related products for cross-selling opportunities.`;
+    title = 'Cross-Sell Ready';
+  }
+
+  return (
+    <motion.div
+      className="insights-sidebar insights-active"
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      transition={{ duration: 0.3 }}
+    >
+      <h4 className="insights-title">
+        <Icon size={16} strokeWidth={2} className="insight-icon" aria-hidden="true" />
+        <span>{title}</span>
+      </h4>
+      <p className="insights-content">{insight}</p>
+      <div className="insights-stats">
+        <div className="insights-stat">
+          <span className="insights-label">Avg Lift</span>
+          <span className="insights-value">{avgLift}</span>
+        </div>
+        <div className="insights-stat">
+          <span className="insights-label">Max Conf.</span>
+          <span className="insights-value">{maxConfidence}</span>
+        </div>
+        <div className="insights-stat">
+          <span className="insights-label">Related Rules</span>
+          <span className="insights-value">{relatedEdges.length}</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function RelationshipMap({ rules, maxRulesToShow = 10 }) {
+  const { nodes, edges, totalRules, displayedRules } = useMemo(
+    () => buildRelationshipMapData(rules, maxRulesToShow),
+    [rules, maxRulesToShow]
+  );
+
+  const width = 920;
+  const height = 480;
+
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [hoveredNode, setHoveredNode] = useState(null);
+  const [tooltipData, setTooltipData] = useState(null);
+  const mapShellRef = useRef(null);
+  const [mapShellSize, setMapShellSize] = useState({ width: width, height: height });
+  const [nodePositions, setNodePositions] = useState(() => createNodeLayout(nodes, width, height));
+
+  useEffect(() => {
+    setNodePositions(createNodeLayout(nodes, width, height));
+  }, [nodes, width, height]);
+
+  const maxLift = Math.max(...edges.map((edge) => edge.lift), 1);
+  const maxSupport = Math.max(...nodes.map((n) => n.support), 0.01);
+
+  useEffect(() => {
+    const updateShellSize = () => {
+      if (!mapShellRef.current) {
+        return;
+      }
+
+      const rect = mapShellRef.current.getBoundingClientRect();
+      if (rect.width && rect.height) {
+        setMapShellSize({ width: rect.width, height: rect.height });
+      }
+    };
+
+    updateShellSize();
+    window.addEventListener('resize', updateShellSize);
+
+    return () => {
+      window.removeEventListener('resize', updateShellSize);
+    };
+  }, []);
+
+  const clampPosition = (value, min, max) => Math.min(Math.max(value, min), max);
+
+  const getClampedTooltipPosition = (nodeX, nodeY) => {
+    const renderedWidth = mapShellSize.width || width;
+    const renderedHeight = mapShellSize.height || height;
+    const scaleX = renderedWidth / width;
+    const scaleY = renderedHeight / height;
+    const tooltipWidth = 220;
+    const tooltipHeight = 72;
+    const padding = 12;
+
+    const desiredLeft = nodeX * scaleX + 16;
+    const desiredTop = nodeY * scaleY - 12;
+
+    return {
+      x: clampPosition(desiredLeft, padding, Math.max(padding, renderedWidth - tooltipWidth - padding)),
+      y: clampPosition(desiredTop, padding, Math.max(padding, renderedHeight - tooltipHeight - padding)),
+    };
+  };
+
+  const updateNodePosition = (nodeName, deltaX, deltaY) => {
+    setNodePositions((currentPositions) => {
+      const currentPoint = currentPositions.get(nodeName);
+      if (!currentPoint) {
+        return currentPositions;
+      }
+
+      const node = nodes.find((item) => item.name === nodeName);
+      const nodeRadius = node ? 12 + (node.support / maxSupport) * 14 : 18;
+      const padding = nodeRadius + 24;
+
+      const nextX = clampPosition(currentPoint.x + deltaX, padding, width - padding);
+      const nextY = clampPosition(currentPoint.y + deltaY, padding, height - padding);
+
+      const nextPositions = new Map(currentPositions);
+      nextPositions.set(nodeName, { x: nextX, y: nextY });
+      return nextPositions;
+    });
+  };
+
+  const handleNodeHover = (nodeName, x, y) => {
+    setHoveredNode(nodeName);
+    const tooltipPosition = getClampedTooltipPosition(x, y);
+    setTooltipData({
+      x: tooltipPosition.x,
+      y: tooltipPosition.y,
+      content: nodes.find((n) => n.name === nodeName)?.name || nodeName,
+    });
+  };
+
+  const handleNodeLeave = () => {
+    setHoveredNode(null);
+    setTooltipData(null);
+  };
+
+  const handleNodeClick = (node) => {
+    setSelectedNode(selectedNode?.name === node.name ? null : node);
+  };
+
+  if (!nodes.length || !edges.length) {
+    return <p className="body-md">Not enough connected rules to draw a relationship map.</p>;
+  }
+
+  return (
+    <div className="relationship-map-container">
+      <div className="map-info-row">
+        <p className="caption">Showing <strong>top {displayedRules}</strong> of {totalRules} rules by Lift</p>
+      </div>
+      <div className="relationship-map-wrapper">
+        <div className="relationship-map-shell" ref={mapShellRef}>
+          <svg viewBox={`0 0 ${width} ${height}`} className="relationship-map" role="img" aria-label="Visual relationship map of item associations">
+            <defs>
+              <marker id="arrowHead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+                <polygon points="0 0, 8 2.5, 0 5" fill="#cc785c" />
+              </marker>
+            </defs>
+
+            {edges.map((edge) => {
+              const from = nodePositions.get(edge.from);
+              const to = nodePositions.get(edge.to);
+              if (!from || !to) {
+                return null;
+              }
+
+              const strokeWidth = 1 + (edge.lift / maxLift) * 6;
+              const baseOpacity = 0.3 + (edge.lift / maxLift) * 0.6;
+              const isRelatedToHovered = hoveredNode && (edge.from === hoveredNode || edge.to === hoveredNode);
+              const isRelatedToSelected = selectedNode && (edge.from === selectedNode.name || edge.to === selectedNode.name);
+              
+              let opacity = baseOpacity;
+              if ((hoveredNode || selectedNode) && !isRelatedToHovered && !isRelatedToSelected) {
+                opacity *= 0.15;
+              }
+
+              return (
+                <motion.line
+                  key={edge.id}
+                  x1={from.x}
+                  y1={from.y}
+                  x2={to.x}
+                  y2={to.y}
+                  stroke="#cc785c"
+                  strokeOpacity={opacity}
+                  strokeWidth={strokeWidth}
+                  markerEnd="url(#arrowHead)"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity }}
+                  transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+                />
+              );
+            })}
+
+            {nodes.map((node, idx) => {
+              const point = nodePositions.get(node.name);
+              if (!point) {
+                return null;
+              }
+
+              const nodeRadius = 12 + (node.support / maxSupport) * 14;
+              const isHovered = hoveredNode === node.name;
+              const isSelected = selectedNode?.name === node.name;
+
+              return (
+                <motion.g
+                  key={node.name}
+                  variants={nodeVariants}
+                  custom={idx}
+                  initial="hidden"
+                  animate="visible"
+                  whileHover={{ scale: 1.08, y: -2, transition: { duration: 0.22, ease: 'easeOut' } }}
+                  whileTap={{ scale: 0.98, transition: { duration: 0.16, ease: 'easeOut' } }}
+                  onPan={(event, info) => updateNodePosition(node.name, info.delta.x, info.delta.y)}
+                  onPanStart={() => setSelectedNode(node)}
+                  onHoverStart={() => handleNodeHover(node.name, point.x, point.y)}
+                  onHoverEnd={handleNodeLeave}
+                  onClick={() => handleNodeClick(node)}
+                  style={{ cursor: 'grab' }}
+                >
+                  <motion.circle
+                    cx={point.x}
+                    cy={point.y}
+                    r={nodeRadius}
+                    fill={node.color}
+                    stroke={isSelected ? '#141413' : '#e6dfd8'}
+                    strokeWidth={isSelected ? 3 : 2}
+                    animate={{
+                      r: isHovered || isSelected ? nodeRadius * 1.3 : nodeRadius,
+                      filter: isHovered || isSelected ? 'drop-shadow(0 8px 18px rgba(20,23,21,0.16))' : 'drop-shadow(0 0px 0px rgba(0,0,0,0))',
+                    }}
+                    transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+                  />
+                  <motion.text
+                    x={point.x}
+                    y={point.y + nodeRadius + 26}
+                    textAnchor="middle"
+                    className="map-node-label"
+                    animate={{
+                      opacity: isHovered || isSelected ? 1 : 0.7,
+                      fontSize: isHovered || isSelected ? 13 : 12,
+                      y: point.y + nodeRadius + (isHovered || isSelected ? 28 : 26),
+                    }}
+                    transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    {node.name.length > 20 ? `${node.name.slice(0, 20)}…` : node.name}
+                  </motion.text>
+                </motion.g>
+              );
+            })}
+          </svg>
+
+          <AnimatePresence>
+            {tooltipData && (
+              <Tooltip x={tooltipData.x} y={tooltipData.y} content={tooltipData.content} />
+            )}
+          </AnimatePresence>
+        </div>
+
+        <AnimatePresence>
+          <InsightsSidebar selectedNode={selectedNode} edges={edges} nodes={nodes} />
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
 
 function App() {
   const [file, setFile] = useState(null);
@@ -17,6 +506,7 @@ function App() {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
   const [statusText, setStatusText] = useState('');
+  const [supportFilter, setSupportFilter] = useState(0);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -60,6 +550,7 @@ function App() {
         headers: { "Content-Type": "multipart/form-data" }
       });
       setResults(response.data);
+      setSupportFilter(Number(response.data?.stats?.adaptive_min_support ?? response.data?.stats?.used_min_support ?? 0));
       setStatusText(response.data?.message || 'Processing finished successfully.');
     } catch (err) {
       if (err.code === 'ECONNABORTED') {
@@ -72,6 +563,23 @@ function App() {
       setLoading(false);
     }
   };
+
+  const associationRules = useMemo(() => {
+    const source = results?.association_rules || [];
+    return source
+      .map((rule, index) => ({
+        ...rule,
+        id: `${index}-${(rule.antecedents || []).join('|')}-${(rule.consequents || []).join('|')}`,
+        support: Number(rule.support) || 0,
+        confidence: Number(rule.confidence) || 0,
+        lift: Number(rule.lift) || 0,
+      }))
+      .sort((a, b) => b.lift - a.lift || b.confidence - a.confidence || b.support - a.support);
+  }, [results]);
+
+  const filteredRules = useMemo(() => {
+    return associationRules.filter((rule) => rule.support >= supportFilter);
+  }, [associationRules, supportFilter]);
 
   return (
     <div className="App">
@@ -255,58 +763,76 @@ function App() {
               </div>
 
               <div>
-                <h3 className="title-lg section-subtitle">Frequent Itemsets</h3>
-                {results.frequent_itemsets?.length > 0 ? (
-                  <div className="table-shell">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Itemset</th>
-                          <th>Support</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {results.frequent_itemsets.map((item, idx) => (
-                          <tr key={idx}>
-                            <td>{item.itemset.join(', ')}</td>
-                            <td>{item.support}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div className="rules-header-row">
+                  <h3 className="title-lg section-subtitle">Association Rule Cards</h3>
+                  <div className="support-filter-shell">
+                    <label htmlFor="support-filter" className="caption">Filter by Support ≥ {supportFilter.toFixed(2)}</label>
+                    <input
+                      id="support-filter"
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={supportFilter}
+                      onChange={(event) => setSupportFilter(Number(event.target.value))}
+                    />
                   </div>
-                ) : (
-                  <p className="body-md">No frequent itemsets found. Try lowering the minimum support.</p>
-                )}
-              </div>
+                </div>
 
-              <div>
-                <h3 className="title-lg section-subtitle">Association Rules</h3>
-                {results.association_rules?.length > 0 ? (
-                  <div className="table-shell table-shell-soft">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Antecedents</th>
-                          <th>Consequents</th>
-                          <th>Support</th>
-                          <th>Confidence</th>
-                          <th>Lift</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {results.association_rules.map((rule, idx) => (
-                          <tr key={idx}>
-                            <td>{rule.antecedents.join(', ')}</td>
-                            <td>{rule.consequents.join(', ')}</td>
-                            <td>{rule.support}</td>
-                            <td>{rule.confidence}</td>
-                            <td>{rule.lift}</td>
-                          </tr>
+                {associationRules.length > 0 ? (
+                  <>
+                    <motion.div
+                      className="rule-cards-grid"
+                      variants={cardContainerVariants}
+                      initial="hidden"
+                      animate="show"
+                    >
+                      <AnimatePresence mode="popLayout">
+                        {filteredRules.map((rule) => (
+                          <motion.article
+                            key={rule.id}
+                            className="rule-card"
+                            variants={cardItemVariants}
+                            initial="hidden"
+                            animate="show"
+                            exit="exit"
+                            layout
+                          >
+                            <div className="rule-card-top">
+                              <span className="badge-coral">Lift {rule.lift.toFixed(2)}</span>
+                              <span className="caption">Support {rule.support.toFixed(2)}</span>
+                            </div>
+                            <p className="rule-direction">
+                              <strong>{(rule.antecedents || []).join(', ')}</strong>
+                              <span>→</span>
+                              <strong>{(rule.consequents || []).join(', ')}</strong>
+                            </p>
+                            <div className="confidence-row">
+                              <span className="caption">Confidence {rule.confidence.toFixed(2)}</span>
+                              <div className="confidence-track">
+                                <motion.div
+                                  className={`confidence-fill ${getConfidenceClass(rule.confidence)}`}
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${Math.max(0, Math.min(100, rule.confidence * 100))}%` }}
+                                  transition={{ duration: 0.6, ease: 'easeOut' }}
+                                />
+                              </div>
+                            </div>
+                          </motion.article>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      </AnimatePresence>
+                    </motion.div>
+
+                    {filteredRules.length === 0 && (
+                      <p className="body-md">No rules match this support filter. Lower the filter to see more cards.</p>
+                    )}
+
+                    <div className="relationship-map-card">
+                      <h3 className="title-lg section-subtitle">Visual Relationship Map</h3>
+                      <p className="body-sm relationship-map-note">Thicker lines indicate stronger relationships by lift.</p>
+                      <RelationshipMap rules={filteredRules} />
+                    </div>
+                  </>
                 ) : (
                   <p className="body-md">No rules generated. Try adjusting support or confidence thresholds.</p>
                 )}
